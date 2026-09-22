@@ -16,6 +16,7 @@ import androidx.compose.foundation.lazy.items
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Add
 import androidx.compose.material.icons.filled.Delete
+import androidx.compose.material3.AlertDialog
 import androidx.compose.material3.Card
 import androidx.compose.material3.Checkbox
 import androidx.compose.material3.ExperimentalMaterial3Api
@@ -25,9 +26,13 @@ import androidx.compose.material3.IconButton
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Scaffold
 import androidx.compose.material3.Text
+import androidx.compose.material3.TextButton
 import androidx.compose.material3.TopAppBar
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableStateOf
+import androidx.compose.runtime.remember
+import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
@@ -40,7 +45,6 @@ import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import com.github.atmoon.to_do_list.data.Tarefa
 import com.github.atmoon.to_do_list.util.formatarDataHora
 import com.github.atmoon.to_do_list.viewmodel.TarefaViewModel
-
 
 @Composable
 fun ListaTarefasScreen(
@@ -70,6 +74,9 @@ fun ListaTarefasContent(
     onCheckedChange: (Tarefa, Boolean) -> Unit,
     onDeletar: (Tarefa) -> Unit
 ) {
+    // Estado para controlar qual tarefa está aguardando confirmação para ser excluída
+    var tarefaParaDeletar by remember { mutableStateOf<Tarefa?>(null) }
+
     Scaffold(
         topBar = {
             TopAppBar(title = { Text("Minhas Tarefas") })
@@ -102,10 +109,38 @@ fun ListaTarefasContent(
                         tarefa = tarefa,
                         onCheckedChange = { concluida -> onCheckedChange(tarefa, concluida) },
                         onEditar = { onEditarTarefa(tarefa.id) },
-                        onDeletar = { onDeletar(tarefa) }
+                        onDeletar = { tarefaParaDeletar = tarefa } // Abre o diálogo ao invés de deletar imediatamente
                     )
                 }
             }
+        }
+
+        // Diálogo de Confirmação de Exclusão com Jetpack Compose Material 3
+        tarefaParaDeletar?.let { tarefa ->
+            AlertDialog(
+                onDismissRequest = { tarefaParaDeletar = null },
+                title = { Text(text = "Excluir Tarefa") },
+                text = {
+                    Text(text = "Tem certeza que deseja excluir a tarefa \"${tarefa.titulo}\"? Esta ação não poderá ser desfeita.")
+                },
+                confirmButton = {
+                    TextButton(
+                        onClick = {
+                            onDeletar(tarefa)
+                            tarefaParaDeletar = null
+                        }
+                    ) {
+                        Text("Excluir")
+                    }
+                },
+                dismissButton = {
+                    TextButton(
+                        onClick = { tarefaParaDeletar = null }
+                    ) {
+                        Text("Cancelar")
+                    }
+                }
+            )
         }
     }
 }
@@ -160,6 +195,32 @@ private fun TarefaItem(
             }
         }
     }
+}
+
+// NOVA PREVIEW: Demonstra o estado do diálogo de confirmação de exclusão
+@Preview(showBackground = true, name = "Diálogo de Confirmação de Exclusão")
+@Composable
+private fun ConfirmacaoExclusaoDialogPreview() {
+    val tarefaExemplo = Tarefa(
+        id = 1,
+        titulo = "Estudar Jetpack Compose",
+        descricao = "Implementar AlertDialog",
+        concluida = false
+    )
+
+    AlertDialog(
+        onDismissRequest = {},
+        title = { Text(text = "Excluir Tarefa") },
+        text = {
+            Text(text = "Tem certeza que deseja excluir a tarefa \"${tarefaExemplo.titulo}\"? Esta ação não poderá ser desfeita.")
+        },
+        confirmButton = {
+            TextButton(onClick = {}) { Text("Excluir") }
+        },
+        dismissButton = {
+            TextButton(onClick = {}) { Text("Cancelar") }
+        }
+    )
 }
 
 @Preview(showBackground = true, name = "Lista com tarefas")
